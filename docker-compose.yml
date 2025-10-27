@@ -1,0 +1,47 @@
+version: "3.9"
+services:
+  api:
+    build: .
+    container_name: rag_api
+    env_file: .env
+    environment:
+      - DB_URL=${DB_URL}
+      - CHROMA_HOST=chroma
+      - CHROMA_PORT=8000
+      - VECTOR_STORE=${VECTOR_STORE:-chroma}
+      - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-openai}
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - UPLOAD_DIR=/data/uploads
+    volumes:
+      - ./data/uploads:/data/uploads
+    ports:
+      - "8001:8001"
+    depends_on:
+      - postgres
+      - chroma
+
+  postgres:
+    image: postgres:16
+    container_name: rag_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-rag}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  chroma:
+    image: ghcr.io/chroma-core/chroma:0.4.24
+    container_name: rag_chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma-data:/chroma/data
+
+volumes:
+  pgdata:
+  chroma-data:
